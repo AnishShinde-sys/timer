@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Big Countdown Timer</title>
+
+<style>
+  /* ---------- Look & feel ---------- */
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#000;              /* pure black */
+    color:#fafafa;
+    font-family:"JetBrains Mono","Courier New",monospace;
+    text-align:center;
+  }
+
+  #timer .digits {
+    font-weight:700;
+    font-size:clamp(2rem,12vw,14rem); /* responsive */
+    letter-spacing:.04em;
+    line-height:1.05;
+  }
+
+  #timer .label {
+    font-size:clamp(.8rem,2.5vw,2rem);
+    opacity:.6;
+  }
+
+  .group   { display:inline-block; margin:0 .25em; }
+  .colon   { display:inline-block; margin:0 .1em; }
+
+  /* Flash seconds when < 10 s remain */
+  .warn { animation:flash 1s linear infinite; }
+  @keyframes flash { 0%,50%{color:#ff4d4d;} 51%,100%{color:#fafafa;} }
+</style>
+</head>
+<body>
+
+  <div id="timer">
+    <div id="daysWrap" class="group">
+      <div id="days" class="digits">00</div>
+      <div class="label">Days</div>
+    </div>
+    <span id="colon1" class="digits colon">:</span>
+    <div class="group">
+      <div id="hours" class="digits">00</div>
+      <div class="label">Hours</div>
+    </div>
+    <span class="digits colon">:</span>
+    <div class="group">
+      <div id="minutes" class="digits">00</div>
+      <div class="label">Minutes</div>
+    </div>
+    <span class="digits colon">:</span>
+    <div class="group">
+      <div id="seconds" class="digits">00</div>
+      <div class="label">Seconds</div>
+    </div>
+  </div>
+
+<script>
+/* ---------- CONFIG ---------- */
+// Target date (local time zone).  Month is 0-based (0 = Jan).
+const TARGET = { year:2025, month:4, day:15, hour:12, minute:0, second:0 };
+
+// Hide the “days” column?  Set to true if you only want HH:MM:SS.
+const HIDE_DAYS = false;
+/* ----------------------------- */
+
+const pad = (n) => String(n).padStart(2,'0');
+const $    = (id) => document.getElementById(id);
+
+if (HIDE_DAYS) {
+  $('daysWrap').style.display = 'none';
+  $('colon1').style.display  = 'none';
+}
+
+const targetDate = new Date(
+  TARGET.year,
+  TARGET.month,
+  TARGET.day,
+  TARGET.hour,
+  TARGET.minute,
+  TARGET.second
+);
+
+function tick() {
+  let diff = Math.floor((targetDate - new Date()) / 1000); // seconds left
+  if (diff < 0) diff = 0;
+
+  const days = Math.floor(diff / 86400);
+  const hrs  = Math.floor((diff % 86400) / 3600);
+  const mins = Math.floor((diff % 3600) / 60);
+  const secs = diff % 60;
+
+  if (!HIDE_DAYS) $('days').textContent = pad(days);
+  $('hours').textContent   = pad(hrs);
+  $('minutes').textContent = pad(mins);
+  $('seconds').textContent = pad(secs);
+
+  $('seconds').classList.toggle('warn', diff <= 10 && diff > 0);
+  if (diff === 0) clearInterval(timerID);      // stop when done
+}
+
+tick();                    // initial paint
+const timerID = setInterval(tick, 1000);
+</script>
+</body>
+</html>
