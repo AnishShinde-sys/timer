@@ -1,115 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Big Countdown Timer</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Big Countdown</title>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 
 <style>
-  /* ---------- Look & feel ---------- */
-  * { margin:0; padding:0; box-sizing:border-box; }
-
-  body {
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    background:#000;              /* pure black */
-    color:#fafafa;
-    font-family:"JetBrains Mono","Courier New",monospace;
-    text-align:center;
+  /* ---------- ROOT LOOK ---------- */
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+    background:#000;
+    color:#d0d0d0;            /* light gray for labels / colons */
+    font-family:'Poppins',sans-serif;
+    text-align:center
   }
-
-  #timer .digits {
+  /* ---------- TIMER ---------- */
+  #timer .digits{
+    font-family:'Space Mono',monospace;
+    color:#ff0000;                 /* RED digits */
     font-weight:700;
-    font-size:clamp(2rem,12vw,14rem); /* responsive */
+    font-size:clamp(2rem,12vw,14rem);
     letter-spacing:.04em;
-    line-height:1.05;
+    line-height:1.05
   }
-
-  #timer .label {
-    font-size:clamp(.8rem,2.5vw,2rem);
-    opacity:.6;
+  #timer .label{
+    font-size:clamp(.75rem,2.2vw,1.8rem);
+    opacity:.6
   }
-
-  .group   { display:inline-block; margin:0 .25em; }
-  .colon   { display:inline-block; margin:0 .1em; }
-
-  /* Flash seconds when < 10 s remain */
-  .warn { animation:flash 1s linear infinite; }
-  @keyframes flash { 0%,50%{color:#ff4d4d;} 51%,100%{color:#fafafa;} }
+  .group{display:inline-block;margin:0 .25em}
+  .colon{display:inline-block;margin:0 .1em;font-size:clamp(2rem,12vw,14rem)}
+  /* Flash seconds when <10 s */
+  .warn{animation:flash 1s linear infinite}
+  @keyframes flash{0%,50%{opacity:.4}51%,100%{opacity:1}}
+  /* ---------- CONTROL PANEL ---------- */
+  #controls{
+    margin-top:2.5rem;
+    display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center
+  }
+  #controls input, #controls button{
+    font-family:'Poppins',sans-serif;font-size:1rem;padding:.4rem .6rem;border-radius:4px;border:none
+  }
+  #controls button{
+    background:#ff0000;color:#fff;cursor:pointer;font-weight:600
+  }
+  #controls button:hover{filter:brightness(1.1)}
+  #controls label{font-size:.9rem;margin-right:.25rem}
 </style>
 </head>
 <body>
 
+  <!-- COUNTDOWN DISPLAY -->
   <div id="timer">
     <div id="daysWrap" class="group">
       <div id="days" class="digits">00</div>
       <div class="label">Days</div>
     </div>
-    <span id="colon1" class="digits colon">:</span>
+    <span id="colon1" class="colon">:</span>
     <div class="group">
       <div id="hours" class="digits">00</div>
       <div class="label">Hours</div>
     </div>
-    <span class="digits colon">:</span>
+    <span class="colon">:</span>
     <div class="group">
       <div id="minutes" class="digits">00</div>
       <div class="label">Minutes</div>
     </div>
-    <span class="digits colon">:</span>
+    <span class="colon">:</span>
     <div class="group">
       <div id="seconds" class="digits">00</div>
       <div class="label">Seconds</div>
     </div>
   </div>
 
+  <!-- CONTROL PANEL -->
+  <div id="controls">
+    <label for="dateInput">Date:</label>
+    <input type="date" id="dateInput">
+    <label for="timeInput">Time:</label>
+    <input type="time" id="timeInput" step="1">
+    <button id="setBtn">Set</button>
+  </div>
+
 <script>
-/* ---------- CONFIG ---------- */
-// Target date (local time zone).  Month is 0-based (0 = Jan).
-const TARGET = { year:2025, month:4, day:15, hour:12, minute:0, second:0 };
-
-// Hide the “days” column?  Set to true if you only want HH:MM:SS.
-const HIDE_DAYS = false;
-/* ----------------------------- */
-
-const pad = (n) => String(n).padStart(2,'0');
-const $    = (id) => document.getElementById(id);
-
-if (HIDE_DAYS) {
-  $('daysWrap').style.display = 'none';
-  $('colon1').style.display  = 'none';
+/* ---------- INITIAL TARGET ---------- */
+let targetDate = new Date(Date.now() + 7*24*60*60*1000); // default = 7 days from now
+/* ---------- HELPERS ---------- */
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,'0');
+/* ---------- CORE TICK ---------- */
+function tick(){
+  let diff = Math.floor((targetDate - Date.now())/1000);
+  if(diff<0) diff=0;
+  const d=Math.floor(diff/86400),
+        h=Math.floor(diff%86400/3600),
+        m=Math.floor(diff%3600/60),
+        s=diff%60;
+  $('days').textContent=pad(d);
+  $('hours').textContent=pad(h);
+  $('minutes').textContent=pad(m);
+  $('seconds').textContent=pad(s);
+  $('seconds').classList.toggle('warn',diff<=10&&diff>0);
+  // Hide day column automatically if target < 1 day away
+  $('daysWrap').style.display = d===0? 'none':'inline-block';
+  $('colon1').style.display   = d===0? 'none':'inline-block';
 }
-
-const targetDate = new Date(
-  TARGET.year,
-  TARGET.month,
-  TARGET.day,
-  TARGET.hour,
-  TARGET.minute,
-  TARGET.second
-);
-
-function tick() {
-  let diff = Math.floor((targetDate - new Date()) / 1000); // seconds left
-  if (diff < 0) diff = 0;
-
-  const days = Math.floor(diff / 86400);
-  const hrs  = Math.floor((diff % 86400) / 3600);
-  const mins = Math.floor((diff % 3600) / 60);
-  const secs = diff % 60;
-
-  if (!HIDE_DAYS) $('days').textContent = pad(days);
-  $('hours').textContent   = pad(hrs);
-  $('minutes').textContent = pad(mins);
-  $('seconds').textContent = pad(secs);
-
-  $('seconds').classList.toggle('warn', diff <= 10 && diff > 0);
-  if (diff === 0) clearInterval(timerID);      // stop when done
+tick();
+const timerID=setInterval(tick,1000);
+/* ---------- CONTROL HANDLERS ---------- */
+const dateInput=$('dateInput'),timeInput=$('timeInput');
+function setDefaultInputs(){
+  const now=new Date(targetDate);
+  dateInput.value=now.toISOString().slice(0,10);
+  timeInput.value=now.toTimeString().slice(0,8);
 }
-
-tick();                    // initial paint
-const timerID = setInterval(tick, 1000);
+setDefaultInputs();
+$('setBtn').addEventListener('click',()=>{
+  if(!dateInput.value || !timeInput.value) return;
+  const [y,m,d]=dateInput.value.split('-').map(Number);
+  const [hh,mm,ss]=timeInput.value.split(':').map(Number);
+  targetDate=new Date(y,m-1,d,hh,mm,ss||0);
+  tick();
+});
 </script>
 </body>
 </html>
