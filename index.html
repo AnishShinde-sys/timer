@@ -3,113 +3,131 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Big Countdown Timer</title>
+<title>Big Countdown</title>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
 
 <style>
-  /* ---------- Look & feel ---------- */
-  * { margin:0; padding:0; box-sizing:border-box; }
+/* ───── RESET ───── */
+*{margin:0;padding:0;box-sizing:border-box}
 
-  body {
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    background:#000;              /* pure black */
-    color:#fafafa;
-    font-family:"JetBrains Mono","Courier New",monospace;
-    text-align:center;
-  }
+/* ───── LAYOUT ───── */
+body{
+  height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  background:#000;color:#fafafa;
+  font-family:"Roboto",sans-serif;text-align:center;
+}
+/* control panel */
+#controls{
+  position:fixed;top:1rem;left:50%;transform:translateX(-50%);
+  background:#111;padding:.75rem 1rem;border-radius:.5rem;
+  box-shadow:0 0 10px rgba(0,0,0,.5);font-size:.9rem
+}
+#controls input{background:#222;border:1px solid #444;color:#fff;padding:.3rem .5rem;border-radius:.25rem}
+#controls button{
+  margin-left:.5rem;background:#0084ff;color:#fff;border:none;padding:.35rem .8rem;border-radius:.25rem;
+  cursor:pointer;font-weight:700
+}
+#controls button:hover{background:#0a90ff}
+#controls label{margin-right:.4rem}
 
-  #timer .digits {
-    font-weight:700;
-    font-size:clamp(2rem,12vw,14rem); /* responsive */
-    letter-spacing:.04em;
-    line-height:1.05;
-  }
+/* timer digits */
+#timer .digits{
+  font-family:"Bebas Neue",monospace;font-size:clamp(2rem,12vw,14rem);font-weight:400;letter-spacing:.04em;line-height:1.05
+}
+#timer .label{font-size:clamp(.75rem,2.3vw,1.75rem);opacity:.65;font-weight:300}
 
-  #timer .label {
-    font-size:clamp(.8rem,2.5vw,2rem);
-    opacity:.6;
-  }
+/* layout groups */
+.group{display:inline-block;margin:0 .25em}
+.colon {display:inline-block;margin:0 .1em}
 
-  .group   { display:inline-block; margin:0 .25em; }
-  .colon   { display:inline-block; margin:0 .1em; }
-
-  /* Flash seconds when < 10 s remain */
-  .warn { animation:flash 1s linear infinite; }
-  @keyframes flash { 0%,50%{color:#ff4d4d;} 51%,100%{color:#fafafa;} }
+/* flashing warning */
+.warn{animation:flash 1s linear infinite}
+@keyframes flash{0%,50%{color:#ff5050}51%,100%{color:#fafafa}}
 </style>
 </head>
 <body>
 
-  <div id="timer">
-    <div id="daysWrap" class="group">
-      <div id="days" class="digits">00</div>
-      <div class="label">Days</div>
-    </div>
-    <span id="colon1" class="digits colon">:</span>
-    <div class="group">
-      <div id="hours" class="digits">00</div>
-      <div class="label">Hours</div>
-    </div>
-    <span class="digits colon">:</span>
-    <div class="group">
-      <div id="minutes" class="digits">00</div>
-      <div class="label">Minutes</div>
-    </div>
-    <span class="digits colon">:</span>
-    <div class="group">
-      <div id="seconds" class="digits">00</div>
-      <div class="label">Seconds</div>
-    </div>
+<!-- ───── CONTROL PANEL (top) ───── -->
+<div id="controls">
+  <label for="dtPicker">Target&nbsp;date&nbsp;&amp;&nbsp;time:</label>
+  <input type="datetime-local" id="dtPicker">
+  <button id="startBtn">Start</button>
+</div>
+
+<!-- ───── COUNTDOWN DISPLAY ───── -->
+<div id="timer">
+  <div id="daysWrap" class="group">
+    <div id="days" class="digits">00</div>
+    <div class="label">Days</div>
   </div>
+  <span id="colon1" class="digits colon">:</span>
+  <div class="group">
+    <div id="hours" class="digits">00</div>
+    <div class="label">Hours</div>
+  </div>
+  <span class="digits colon">:</span>
+  <div class="group">
+    <div id="minutes" class="digits">00</div>
+    <div class="label">Minutes</div>
+  </div>
+  <span class="digits colon">:</span>
+  <div class="group">
+    <div id="seconds" class="digits">00</div>
+    <div class="label">Seconds</div>
+  </div>
+</div>
 
 <script>
-/* ---------- CONFIG ---------- */
-// Target date (local time zone).  Month is 0-based (0 = Jan).
-const TARGET = { year:2025, month:4, day:15, hour:12, minute:0, second:0 };
+/* ───── GLOBALS ───── */
+let targetDate = null, timerID = null;
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,"0");
 
-// Hide the “days” column?  Set to true if you only want HH:MM:SS.
-const HIDE_DAYS = false;
-/* ----------------------------- */
+/* ───── TICK FUNCTION ───── */
+function tick(){
+  let diff = Math.floor((targetDate - new Date())/1000);
+  if(diff < 0) diff = 0;
 
-const pad = (n) => String(n).padStart(2,'0');
-const $    = (id) => document.getElementById(id);
+  const d = Math.floor(diff/86400);
+  const h = Math.floor((diff%86400)/3600);
+  const m = Math.floor((diff%3600)/60);
+  const s = diff % 60;
 
-if (HIDE_DAYS) {
-  $('daysWrap').style.display = 'none';
-  $('colon1').style.display  = 'none';
+  $("days").textContent    = pad(d);
+  $("hours").textContent   = pad(h);
+  $("minutes").textContent = pad(m);
+  $("seconds").textContent = pad(s);
+  $("seconds").classList.toggle("warn", diff<=10 && diff>0);
+
+  if(diff === 0 && timerID) clearInterval(timerID);
 }
 
-const targetDate = new Date(
-  TARGET.year,
-  TARGET.month,
-  TARGET.day,
-  TARGET.hour,
-  TARGET.minute,
-  TARGET.second
-);
-
-function tick() {
-  let diff = Math.floor((targetDate - new Date()) / 1000); // seconds left
-  if (diff < 0) diff = 0;
-
-  const days = Math.floor(diff / 86400);
-  const hrs  = Math.floor((diff % 86400) / 3600);
-  const mins = Math.floor((diff % 3600) / 60);
-  const secs = diff % 60;
-
-  if (!HIDE_DAYS) $('days').textContent = pad(days);
-  $('hours').textContent   = pad(hrs);
-  $('minutes').textContent = pad(mins);
-  $('seconds').textContent = pad(secs);
-
-  $('seconds').classList.toggle('warn', diff <= 10 && diff > 0);
-  if (diff === 0) clearInterval(timerID);      // stop when done
+/* ───── START / RESTART LOGIC ───── */
+function startCountdown(ms){
+  if(timerID) clearInterval(timerID);
+  targetDate = new Date(ms);
+  tick();                               // immediate paint
+  timerID = setInterval(tick,1000);
 }
 
-tick();                    // initial paint
-const timerID = setInterval(tick, 1000);
+/* ───── UI HANDLERS ───── */
+document.getElementById("startBtn").addEventListener("click",()=>{
+  const val = $("dtPicker").value;
+  if(!val){
+    alert("Please pick a date and time first.");
+    return;
+  }
+  const chosen = new Date(val);
+  if(chosen <= new Date()){
+    alert("Pick a future date/time."); return;
+  }
+  startCountdown(chosen);
+});
+
+/* ───── DEFAULT (example) TARGET ───── */
+startCountdown(new Date().getTime()+10*86400*1000); // 10 days from now
 </script>
 </body>
 </html>
